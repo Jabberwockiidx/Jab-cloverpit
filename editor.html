@@ -350,8 +350,12 @@
     }
 
     function genId(){
-      // 時刻 + 乱数の簡易ID
-      return String(Date.now()) + '-' + Math.random().toString(36).slice(2,6);
+      // 連番: 既存ID(数値)の最大値 + 1 を採用（例: [1,3,4] -> 5）
+      const nums = entries
+        .map(e => parseInt(String(e.id), 10))
+        .filter(n => Number.isFinite(n) && n >= 0);
+      const next = nums.length ? Math.max(...nums) + 1 : 1;
+      return String(next);
     }
 
     function downloadJson(){
@@ -423,6 +427,4 @@
 </body>
 </html>
 
-</body>
-</html>
 
