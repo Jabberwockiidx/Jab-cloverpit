@@ -11,4 +11,16 @@
     "note": "メモ",
     "createdAt": "2025-10-15"
   }
+  {
+    "id": "２",
+    "name": "Placeholder2",
+    "category": "カテゴリ（例：哺乳類）",
+    "description": "この文章はプレースホルダー2です。",
+    "tags": ["タグ1", "タグ2"],
+    "imageUrl": "images/tree-frog.png",
+    "size": "大きさなど",
+    "habitat": "生息域など",
+    "note": "メモ",
+    "createdAt": "2025-10-15"
+  }
 ]
