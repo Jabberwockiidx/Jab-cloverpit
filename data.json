@@ -1,8 +1,0 @@
-<script>
-fetch("data.json")
-  .then(res => res.json())
-  .then(json => {
-    const entries = json.items;
-    // ここで entries を使って図鑑を表示
-  });
-</script>
