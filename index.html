@@ -5,43 +5,133 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ミニ図鑑</title>
   <style>
-    body { font-family: sans-serif; background-color: #f0f0f0; margin: 0; padding: 1em; }
-    h1 { text-align: center; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1em; }
-    .card { background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); padding: 1em; }
-    .card img { width: 100%; border-radius: 8px; }
-    .name { font-weight: bold; margin-top: 0.5em; }
-    .desc { font-size: 0.9em; color: #555; }
+    :root{--bg:#0f172a;--panel:#111827cc;--card:#0b1222;--text:#e5e7eb;--muted:#94a3b8;--ring:#22d3ee55}
+    *{box-sizing:border-box}
+    body{font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Arial, sans-serif; background:radial-gradient(1200px 600px at 20% -10%, #1f2937 0%, #0b1222 40%, #0a0f1f 70%); color:var(--text); margin:0}
+    header{max-width:980px; margin:0 auto; padding:20px 16px 8px; display:flex; align-items:center; justify-content:space-between}
+    h1{margin:0; font-size:24px}
+    .wrap{max-width:980px; margin:0 auto; padding:0 16px 60px}
+    .grid{display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:14px}
+    .card{background:linear-gradient(180deg,#101828,#0b1222); border:1px solid #22314a; border-radius:14px; padding:12px; box-shadow:0 6px 18px #0009}
+    .card img{width:100%; aspect-ratio:16/10; object-fit:cover; border-radius:10px; border:1px solid #22314a}
+    .name{font-weight:800; margin-top:8px}
+    .desc{font-size:13px; color:#cbd5e1; line-height:1.6}
+    .note{background:#0b1222; border:1px dashed #334155; border-radius:10px; padding:12px; color:#cbd5e1; margin:16px 0}
+    .error{background:#1f2937; border:1px solid #ef4444; color:#fecaca}
+    .toolbar{display:flex; gap:8px; align-items:center; margin:10px 0 16px}
+    input,button{background:#0b1222; color:var(--text); border:1px solid #334155; border-radius:10px; padding:10px 12px}
+    button.primary{background:#2563eb; border-color:#2563eb}
+    code{color:#a5b4fc}
   </style>
 </head>
 <body>
-  <h1>ミニ図鑑</h1>
-  <div id="grid" class="grid"></div>
+  <header>
+    <h1>ミニ図鑑</h1>
+    <div class="toolbar">
+      <input id="urlInput" type="text" placeholder="data.json のパス" style="min-width:260px">
+      <button id="reloadBtn">再読み込み</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div id="message" class="note" style="display:none"></div>
+    <div id="grid" class="grid"></div>
+  </div>
 
   <script>
-    async function loadData() {
-      try {
-        const response = await fetch('data.json');
-        const json = await response.json();
-        render(json.items);
-      } catch (err) {
-        document.getElementById('grid').innerHTML = '<p>データを読み込めませんでした。</p>';
-        console.error(err);
+    // —— 設定: クエリ ?json=... で差し替え可能
+    const defaultUrl = './data.json';
+    const params = new URLSearchParams(location.search);
+    const DATA_URL = params.get('json') || defaultUrl;
+    const urlInput = document.getElementById('urlInput');
+    urlInput.value = DATA_URL;
+
+    document.getElementById('reloadBtn').addEventListener('click', ()=>{
+      const u = urlInput.value.trim() || defaultUrl;
+      loadData(u);
+      const p = new URL(location.href);
+      p.searchParams.set('json', u);
+      history.replaceState(null,'', p);
+    });
+
+    async function loadData(url){
+      const grid = document.getElementById('grid');
+      const msg = document.getElementById('message');
+      msg.style.display='none';
+      grid.innerHTML = '<div class="note">読み込み中…</div>';
+      try{
+        const res = await fetch(url, { cache: 'no-store' });
+        if(!res.ok){
+          throw new Error(`HTTP ${res.status} ${res.statusText}`);
+        }
+        const json = await res.json();
+        const items = json.items || json;
+        if(!Array.isArray(items)) throw new Error('JSON の形式が想定外です。items 配列が見つかりません。');
+        render(items);
+      }catch(err){
+        console.error('[data.json 読み込みエラー]', err);
+        grid.innerHTML = '';
+        msg.classList.add('error');
+        msg.style.display='block';
+        msg.innerHTML = `
+          <strong>データを読み込めませんでした。</strong><br>
+          <ul style="margin-left:1em; line-height:1.7">
+            <li><code>${escapeHtml(url)}</code> が <strong>リポジトリ内の index.html と同じフォルダ</strong>にありますか？（大文字小文字も一致）</li>
+            <li>GitHub Pages の公開ブランチ・フォルダ（例: <code>main / root</code> や <code>docs/</code>）に <code>data.json</code> を置いていますか？</li>
+            <li>ローカルで <code>file:///…/index.html</code> を直接開くと <code>fetch</code> は失敗します。<br>ローカルサーバーを使うか、GitHub Pages の URL（<code>https://ユーザー名.github.io/リポジトリ名/</code>）から開いてください。</li>
+            <li>キャッシュの影響を避けるため、URL 末尾に <code>?v=1</code> などを付けてみてください。</li>
+          </ul>
+          <div style="margin-top:8px">
+            すぐ試せる代替: 下の <em>サンプル表示</em> ボタンで、埋め込みデータを表示できます。
+          </div>
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+            <button id="showSample" class="primary">サンプル表示</button>
+            <button id="tryAgain">再試行</button>
+          </div>
+        `;
+        document.getElementById('tryAgain').onclick = ()=> loadData(url);
+        document.getElementById('showSample').onclick = ()=> render(sampleData());
       }
     }
 
-    function render(items) {
+    function render(items){
       const grid = document.getElementById('grid');
-      grid.innerHTML = items.map(item => `
-        <div class="card">
-          <img src="${item.imageUrl || ''}" alt="${item.name}">
-          <div class="name">${item.name}</div>
-          <div class="desc">${item.description}</div>
-        </div>
-      `).join('');
+      if(!items.length){
+        grid.innerHTML = '<div class="note">項目がありません。<br>data.json に items 配列を追加してください。</div>';
+        return;
+      }
+      grid.innerHTML = items.map(item=>{
+        const img = item.imageUrl ? `<img src="${escapeAttr(item.imageUrl)}" alt="${escapeAttr(item.name)}">` : placeholder(item.name);
+        return `
+          <article class="card">
+            ${img}
+            <div class="name">${escapeHtml(item.name||'名称未設定')}</div>
+            <div class="desc">${escapeHtml(item.description||'説明なし')}</div>
+          </article>`;
+      }).join('');
     }
 
-    loadData();
+    function escapeHtml(s=''){return String(s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]))}
+    function escapeAttr(s=''){return String(s).replace(/"/g,'&quot;')}
+    function placeholder(text=''){
+      const t = (text||'').slice(0,6);
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500'>
+        <rect width='800' height='500' fill='#0b1222'/>
+        <text x='50%' y='52%' text-anchor='middle' font-size='64' fill='#94a3b8' font-family='system-ui, sans-serif'>${escapeHtml(t)}</text>
+      </svg>`;
+      return `<img alt='placeholder' src='data:image/svg+xml;utf8,${encodeURIComponent(svg)}'>`;
+    }
+
+    function sampleData(){
+      return [
+        {"id":"1","name":"アオガエル","description":"樹上で生活する小型のカエル。","imageUrl":"images/tree-frog.jpg"},
+        {"id":"2","name":"ヤマネコ","description":"夜行性で小動物を狩る。","imageUrl":"images/wildcat.jpg"},
+        {"id":"3","name":"クロツグミ","description":"澄んださえずり。","imageUrl":"images/black-thrush.jpg"}
+      ];
+    }
+
+    // 初回読み込み
+    loadData(DATA_URL);
   </script>
 </body>
 </html>
