@@ -9,6 +9,10 @@
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI",sans-serif}
     header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#0b1222}
+    header .left{display:flex;gap:10px;align-items:center}
+    a.btn{display:inline-block;background:#0b1222;border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:10px;text-decoration:none}
+    a.btn:hover{background:#0f172a}
+    a.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#031420}
     header h1{font-size:18px;margin:0}
     .wrap{display:grid;grid-template-columns: 1.2fr 1fr;gap:14px;max-width:1200px;margin:0 auto;padding:16px}
     @media (max-width:900px){.wrap{grid-template-columns:1fr}}
@@ -45,7 +49,10 @@
 </head>
 <body>
   <header>
-    <h1>図鑑データエディタ <span class="hint" id="status"></span></h1>
+    <div class="left">
+      <a class="btn" href="./index.html" title="図鑑ページへ戻る">← 図鑑へ戻る</a>
+      <h1>図鑑データエディタ <span class="hint" id="status"></span></h1>
+    </div>
     <div class="right">
       <button id="btnImport">JSON読み込み</button>
       <button id="btnDownload" class="primary">data.jsonを書き出し</button>
