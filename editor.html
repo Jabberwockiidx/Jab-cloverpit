@@ -45,6 +45,16 @@
 
     .footer{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:10px}
     a.link{color:var(--accent)}
+      /* ==== Live Preview Styles ==== */
+    .preview{margin-top:12px}
+    .pv-card{background:#111827;border:1px solid #22314a;border-radius:14px;overflow:hidden;box-shadow:0 8px 20px #0006}
+    .pv-thumb{aspect-ratio:16/10;display:grid;place-items:center;background:#0b1222}
+    .pv-thumb img{width:100%;height:100%;object-fit:cover}
+    .pv-body{padding:12px;text-align:left}
+    .pv-name{font-weight:800;margin:0 0 6px 0}
+    .pv-meta{display:flex;gap:6px;flex-wrap:wrap;font-size:12px;color:#94a3b8}
+    .pv-tag{border:1px solid #334155;padding:2px 8px;border-radius:999px}
+    .pv-desc{font-size:13px;color:#cbd5e1;margin-top:8px;line-height:1.6}
   </style>
 </head>
 <body>
@@ -144,6 +154,20 @@
             </div>
           </div>
         </form>
+        <div class="preview">
+          <h3 style="margin:14px 0 8px;font-size:14px;color:#94a3b8">ライブプレビュー</h3>
+          <div class="pv-card" id="pvCard">
+            <div class="pv-thumb"><img id="pvImg" alt="プレビュー画像"></div>
+            <div class="pv-body">
+              <div class="pv-name" id="pvName">（名前）</div>
+              <div class="pv-meta">
+                <span class="pv-tag" id="pvCategory">カテゴリ</span>
+                <span id="pvTags"></span>
+              </div>
+              <div class="pv-desc" id="pvDesc">ここに説明が表示されます。</div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -240,7 +264,7 @@
     // ===== フォーム =====
     function fillForm(e){
       editingId = e.id;
-      document.getElementById('formTitle').textContent = '編集: ' + (e.name||'')
+      document.getElementById('formTitle').textContent = '編集: ' + (e.name||'');
       f_id.value = e.id || '';
       f_name.value = e.name || '';
       f_category.value = e.category || '';
@@ -251,24 +275,48 @@
       f_habitat.value = e.habitat || '';
       f_note.value = e.note || '';
       f_createdAt.value = e.createdAt || '';
+      updatePreview();
     }
 
     function resetForm(){
       editingId = null;
       document.getElementById('formTitle').textContent = '新規作成';
       document.getElementById('form').reset();
+      updatePreview();
     }
 
     function bindUI(){
       document.getElementById('q').addEventListener('input', renderTable);
       document.getElementById('sort').addEventListener('change', renderTable);
-      document.getElementById('btnNew').addEventListener('click', resetForm);
-      document.getElementById('btnReset').addEventListener('click', resetForm);
+      document.getElementById('btnNew').addEventListener('click', ()=>{ resetForm(); updatePreview(); });
+      document.getElementById('btnReset').addEventListener('click', ()=>{ resetForm(); updatePreview(); });
 
       document.getElementById('form').addEventListener('submit', ev =>{
         ev.preventDefault();
         const entry = collectForm();
         if(!entry.name || !entry.description){ alert('名前と説明は必須です'); return; }
+        if(editingId){
+          const idx = entries.findIndex(x => String(x.id) === String(editingId));
+          if(idx>=0) entries[idx] = entry;
+        }else{
+          entries.unshift(entry);
+        }
+        renderTable();
+        resetForm();
+        updatePreview();
+      });
+
+      document.getElementById('btnDownload').addEventListener('click', downloadJson);
+      document.getElementById('btnImport').addEventListener('click', ()=> document.getElementById('fileInput').click());
+      document.getElementById('fileInput').addEventListener('change', importJsonFromFile);
+
+      // フォームの入力に応じてライブ更新
+      document.querySelectorAll('#form input, #form textarea, #form select').forEach(el=>{
+        el.addEventListener('input', updatePreview);
+        el.addEventListener('change', updatePreview);
+      });
+      updatePreview();
+    }
         if(editingId){
           const idx = entries.findIndex(x => String(x.id) === String(editingId));
           if(idx>=0) entries[idx] = entry;
@@ -337,6 +385,44 @@
     // ===== ユーティリティ =====
     function escapeHtml(s=''){return String(s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]))}
     function escapeAttr(s=''){return String(s).replace(/"/g,'&quot;')}
+
+    // ---- プレビュー ----
+    function updatePreview(){
+      const e = collectForm();
+      const imgEl = document.getElementById('pvImg');
+      const nameEl = document.getElementById('pvName');
+      const catEl = document.getElementById('pvCategory');
+      const tagsWrap = document.getElementById('pvTags');
+      const descEl = document.getElementById('pvDesc');
+
+      nameEl.textContent = e.name || '（名前）';
+      catEl.textContent = e.category || '未分類';
+      descEl.textContent = e.description || 'ここに説明が表示されます。';
+
+      const tags = (e.tags||[]).slice(0,3).map(t=>`<span class='pv-tag'>${escapeHtml(t)}</span>`).join('');
+      tagsWrap.innerHTML = tags;
+
+      if(e.imageUrl){
+        imgEl.src = e.imageUrl;
+        imgEl.alt = e.name || 'プレビュー画像';
+      }else{
+        imgEl.src = placeholderFromText(e.name||'');
+        imgEl.alt = 'プレースホルダー';
+      }
+    }
+
+    function placeholderFromText(text){
+      const t = (text||'').slice(0,6) || 'Preview';
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500'>
+        <rect width='800' height='500' fill='#0b1222'/>
+        <text x='50%' y='52%' text-anchor='middle' font-size='64' fill='#94a3b8' font-family='system-ui, sans-serif'>${escapeHtml(t)}</text>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
   </script>
 </body>
 </html>
+
+</body>
+</html>
+
