@@ -54,131 +54,108 @@
     data.json を編集して保存すると、ページ読み込み時に自動で反映されます。
   </footer>
 
-  <script>
-    // ------- ユーティリティ -------
-    const $ = (sel) => document.querySelector(sel);
-    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
-    const debounce = (fn, ms=200) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
+<script>
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  const debounce = (fn, ms=200) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
 
-    // ------- 状態 -------
-    let DATA = [];
-    let ACTIVE_TAGS = new Set();
+  let DATA = [];
+  let ACTIVE_TAGS = new Set();
 
-    // ------- 画面更新 -------
-    function renderCards(list){
-      const grid = $("#grid");
-      grid.innerHTML = list.map(item => {
-        const tags = (item.tags||[]).map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join("");
-const imgPath = item.image && item.image.trim() ? item.image : "images/no_image_logo.png";
-const img = `<img src="${escapeAttr(imgPath)}" alt="${escapeAttr(item.name)}"
-  style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;margin-bottom:8px;border:1px solid #1c2444;"
-  onerror="this.src='images/no_image_logo.png';" />`;
+  function renderCards(list){
+    const grid = $("#grid");
+    grid.innerHTML = list.map((item, i) => {
+      const tags = (item.tags||[]).map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join("");
+      const imgPath = item.image && item.image.trim() ? item.image : "images/no_image_logo.png";
+      const img = `<img src="${escapeAttr(imgPath)}" alt="${escapeAttr(item.name)}"
+        style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;margin-bottom:8px;border:1px solid #1c2444;"
+        onerror="this.src='images/no_image_logo.png';" />`;
+      return `
+        <article class="card" tabindex="0" data-index="${i}">
+          ${img}
+          <h3 class="title">${escapeHtml(item.name)}</h3>
+          <p class="desc">${escapeHtml(item.description || "")}</p>
+          <div class="chiprow">${tags}</div>
+        </article>
+      `;
+    }).join("");
 
-return `
-  <article class="card" tabindex="0">
-    ${img}
-    <h3 class="title">${escapeHtml(item.name)}</h3>
-    <p class="desc">${escapeHtml(item.description || "")}</p>
-    <div class="chiprow">${tags}</div>
-  </article>
-`;
+    $("#count").textContent = `${list.length} 件表示 / 全 ${DATA.length} 件`;
 
-      }).join("");
-
-      $("#count").textContent = `${list.length} 件表示 / 全 ${DATA.length} 件`;
-    }
-
-    function renderTagCloud(allTags){
-      const tagCloud = $("#tagCloud");
-      tagCloud.innerHTML = Array.from(allTags)
-        .sort((a,b)=>a.localeCompare(b,'ja'))
-        .map(tag => `<button class="tag" data-tag="${escapeAttr(tag)}">${escapeHtml(tag)}</button>`)
-        .join("");
-
-      // クリックでトグル
-      $$("#tagCloud .tag").forEach(btn=>{
-        btn.addEventListener("click", ()=>{
-          const t = btn.dataset.tag;
-          if (ACTIVE_TAGS.has(t)) { ACTIVE_TAGS.delete(t); btn.classList.remove("active"); }
-          else { ACTIVE_TAGS.add(t); btn.classList.add("active"); }
-          applyFilters();
-        });
+    // カードクリックでモーダル表示
+    $$(".card").forEach(card=>{
+      card.addEventListener("click", ()=>{
+        const idx = parseInt(card.dataset.index);
+        showModal(list[idx]);
       });
-    }
+    });
+  }
 
-    // ------- フィルタ -------
-    function applyFilters(){
-      const nameQ = $("#qName").value.trim().toLowerCase();
-      // #1: 入力欄のタグ（カンマ区切り）
-      const typedTags = $("#qTag").value.split(",").map(s=>s.trim()).filter(Boolean);
-      const allActive = new Set([...ACTIVE_TAGS, ...typedTags]);
-
-      const filtered = DATA.filter(item=>{
-        const okName = !nameQ || (item.name||"").toLowerCase().includes(nameQ);
-        const okTags = allActive.size === 0 || [...allActive].every(t => (item.tags||[]).includes(t));
-        return okName && okTags;
+  function renderTagCloud(allTags){
+    const tagCloud = $("#tagCloud");
+    tagCloud.innerHTML = Array.from(allTags)
+      .sort((a,b)=>a.localeCompare(b,'ja'))
+      .map(tag => `<button class="tag" data-tag="${escapeAttr(tag)}">${escapeHtml(tag)}</button>`)
+      .join("");
+    $$("#tagCloud .tag").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const t = btn.dataset.tag;
+        if (ACTIVE_TAGS.has(t)) { ACTIVE_TAGS.delete(t); btn.classList.remove("active"); }
+        else { ACTIVE_TAGS.add(t); btn.classList.add("active"); }
+        applyFilters();
       });
+    });
+  }
 
-      renderCards(filtered);
-      updateHashForShare(nameQ, [...allActive]);
-    }
+  function applyFilters(){
+    const nameQ = $("#qName").value.trim().toLowerCase();
+    const typedTags = $("#qTag").value.split(",").map(s=>s.trim()).filter(Boolean);
+    const allActive = new Set([...ACTIVE_TAGS, ...typedTags]);
+    const filtered = DATA.filter(item=>{
+      const okName = !nameQ || (item.name||"").toLowerCase().includes(nameQ);
+      const okTags = allActive.size === 0 || [...allActive].every(t => (item.tags||[]).includes(t));
+      return okName && okTags;
+    });
+    renderCards(filtered);
+  }
 
-    // ------- 共有用：URLハッシュに検索状態保存 -------
-    function updateHashForShare(nameQ, tags){
-      const params = new URLSearchParams();
-      if (nameQ) params.set("q", nameQ);
-      if (tags.length) params.set("tags", tags.join(","));
-      if ([...params].length) location.hash = params.toString(); else history.replaceState(null,"",location.pathname+location.search);
-    }
-    function restoreFromHash(){
-      if (!location.hash) return;
-      const p = new URLSearchParams(location.hash.slice(1));
-      const q = p.get("q") || "";
-      const tags = (p.get("tags")||"").split(",").filter(Boolean);
-      $("#qName").value = q;
-      $("#qTag").value = tags.filter(t=>!ACTIVE_TAGS.has(t)).join(","); // 入力欄へ
-      tags.forEach(t=>ACTIVE_TAGS.add(t));
-      // タグボタンの見た目更新
-      $$("#tagCloud .tag").forEach(btn=>{
-        if (ACTIVE_TAGS.has(btn.dataset.tag)) btn.classList.add("active");
-      });
-    }
+  function escapeHtml(s){ return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
+  function escapeAttr(s){ return String(s).replaceAll("&","&amp;").replaceAll("\"","&quot;"); }
 
-    // ------- 安全な表示用エスケープ -------
-    function escapeHtml(s){ return String(s)
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
-    function escapeAttr(s){ return String(s)
-      .replaceAll("&","&amp;").replaceAll("\"","&quot;"); }
+  async function init(){
+    const res = await fetch("data.json", { cache:"no-store" });
+    if (!res.ok) { $("#grid").innerHTML = `<p>data.json 読み込み失敗 (${res.status})</p>`; return; }
+    DATA = await res.json();
+    const allTags = new Set();
+    DATA.forEach(it => (it.tags||[]).forEach(t => allTags.add(t)));
+    renderTagCloud(allTags);
+    $("#qName").addEventListener("input", debounce(applyFilters, 120));
+    $("#qTag").addEventListener("input", debounce(applyFilters, 120));
+    applyFilters();
+  }
 
-    // ------- 初期化 -------
-    async function init(){
-      // data.json を取得（同じフォルダに置く）
-      const res = await fetch("data.json", { cache:"no-store" });
-      if (!res.ok) {
-        $("#grid").innerHTML = `<p class="desc">data.json の読み込みに失敗しました（${res.status}）。リポジトリに置かれているか確認してください。</p>`;
-        $("#count").textContent = `0 件表示 / 全 0 件`;
-        return;
-      }
-      DATA = await res.json();
+  // ===== モーダル処理 =====
+  function showModal(item){
+    const modal = $("#modal");
+    const imgPath = item.image && item.image.trim() ? item.image : "images/no_image_logo.png";
+    modal.innerHTML = `
+      <div class="modal-bg"></div>
+      <div class="modal-content">
+        <img src="${escapeAttr(imgPath)}" alt="${escapeAttr(item.name)}" onerror="this.src='images/no_image_logo.png';" />
+        <h2>${escapeHtml(item.name)}</h2>
+        <p>${escapeHtml(item.description || "")}</p>
+        <div class="chiprow">${(item.tags||[]).map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join("")}</div>
+      </div>
+    `;
+    modal.classList.add("show");
+    modal.querySelector(".modal-bg").addEventListener("click", ()=> modal.classList.remove("show"));
+  }
 
-      // タグ集合を作成
-      const allTags = new Set();
-      DATA.forEach(it => (it.tags||[]).forEach(t => allTags.add(t)));
-      renderTagCloud(allTags);
-
-      // 入力イベント
-      $("#qName").addEventListener("input", debounce(applyFilters, 120));
-      $("#qTag").addEventListener("input", debounce(applyFilters, 120));
-
-      // 共有リンクから復元→反映
-      restoreFromHash();
-      applyFilters();
-    }
-
-    init();
-  </script>
+  init();
+</script>
 </body>
 </html>
+
 
 
 
