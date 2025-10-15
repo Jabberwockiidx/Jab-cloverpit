@@ -1,25 +1,9 @@
 [
     {
-    "id": "0",
+    "id": "1",
     "name": "Placeholder",
     "category": "Placeholder",
     "description": "この文章はプレースホルダーです。",
     "imageUrl": "images/Placeholder.png"
   }
-  {
-    "id": "1",
-    "name": "アオガエル",
-    "category": "両生類",
-    "description": "樹上で生活する小型のカエル。吸盤のある指で器用に枝を渡る。",
-    "imageUrl": "images/tree-frog.png"
-  },
-  {
-    "id": "2",
-    "name": "ヤマネコ",
-    "category": "哺乳類",
-    "description": "夜行性の野生猫。鋭い爪で獲物を狩る。",
-    "imageUrl": "images/wildcat.png"
-  }
 ]
-
-
