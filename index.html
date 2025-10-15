@@ -21,7 +21,7 @@
     // 外部 data.json からデータを取得して表示
     async function loadData(){
       try{
-        const res = await fetch('data.json');
+        const res = await fetch('./data.json');
         const data = await res.json();
         render(data);
       }catch(err){
@@ -44,3 +44,4 @@
   </script>
 </body>
 </html>
+
