@@ -29,6 +29,37 @@
     .chip { font-size:11px; padding:4px 8px; border-radius:999px; background:#0f1530; border:1px solid #243055; color:#aab3d1; }
     footer { max-width:980px; margin:24px auto; padding:0 16px; color:var(--muted); font-size:12px; }
     @media (max-width:640px){ .toolbar{ grid-template-columns:1fr; } .count{text-align:left;} }
+    #modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.65);
+  z-index: 999;
+}
+#modal.show { display: flex; animation: fadein .2s ease; }
+.modal-content {
+  background: #131a33;
+  padding: 20px;
+  border-radius: 16px;
+  max-width: 480px;
+  width: 90%;
+  color: #e6ebff;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: pop .2s ease;
+}
+.modal-content img {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border:1px solid #1c2444;
+}
+.modal-content h2 { margin: 0 0 8px; }
+.modal-content p { line-height: 1.6; color: #cbd5e1; margin-bottom: 12px; }
+@keyframes fadein { from {opacity:0;} to {opacity:1;} }
+@keyframes pop { from {transform: scale(0.9);} to {transform: scale(1);} }
   </style>
 </head>
 <body>
@@ -153,10 +184,6 @@
 
   init();
 </script>
+<div id="modal"></div>
 </body>
 </html>
-
-
-
-
-
