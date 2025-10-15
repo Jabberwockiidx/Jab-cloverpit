@@ -333,7 +333,7 @@
     }
 
     function collectForm(){
-      const id = (f_id.value || genId()).trim();
+      const id = (f_id.value ? String(f_id.value).trim() : genId());
       const entry = {
         id,
         name: f_name.value.trim(),
@@ -350,12 +350,20 @@
     }
 
     function genId(){
-      // 連番: 既存ID(数値)の最大値 + 1 を採用（例: [1,3,4] -> 5）
-      const nums = entries
-        .map(e => parseInt(String(e.id), 10))
-        .filter(n => Number.isFinite(n) && n >= 0);
-      const next = nums.length ? Math.max(...nums) + 1 : 1;
-      return String(next);
+      // 既存の数値IDの最大値 + 1 を返す（数値でないIDは無視）
+      return nextNumericId(entries);
+    }
+
+    function nextNumericId(list){
+      const nums = list
+        .map(e => Number(String(e?.id ?? '').trim()))
+        .filter(n => Number.isFinite(n));
+      const max = nums.length ? Math.max(...nums) : 0;
+      let candidate = max + 1;
+      // 念のため、文字列比較で重複しないようチェック
+      const idset = new Set(list.map(e => String(e?.id ?? '')));
+      while(idset.has(String(candidate))){ candidate++; }
+      return String(candidate);
     }
 
     function downloadJson(){
