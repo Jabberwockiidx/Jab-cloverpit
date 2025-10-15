@@ -72,15 +72,15 @@
         const imgPath = item.image && item.image.trim() ? item.image : "no_image_logo.png";
         const img = `<img src="${escapeAttr(imgPath)}" alt="${escapeAttr(item.name)}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;margin-bottom:8px;border:1px solid #1c2444;" onerror="this.src='./images/no_image_logo.png';" />`;
 
-        return `
-          <article class="card" tabindex="0">
-            ${img}
-            <h3 class="title">${escapeHtml(item.name)}</h3>
-            <div class="category">${escapeHtml(item.category || "—")}</div>
-            <p class="desc">${escapeHtml(item.description || "")}</p>
-            <div class="chiprow">${tags}</div>
-          </article>
-        `;
+    return `
+        <article class="card" tabindex="0">
+        ${img}
+        <h3 class="title">${escapeHtml(item.name)}</h3>
+        <p class="desc">${escapeHtml(item.description || "")}</p>
+        <div class="chiprow">${tags}</div>
+      </article>
+    `;
+
       }).join("");
 
       $("#count").textContent = `${list.length} 件表示 / 全 ${DATA.length} 件`;
@@ -177,5 +177,6 @@
   </script>
 </body>
 </html>
+
 
 
