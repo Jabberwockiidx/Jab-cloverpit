@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ミニ図鑑</title>
+  <style>
+    :root{
+      --bg:#0f172a;           /* slate-900 */
+      --panel:#111827cc;      /* gray-900 + alpha */
+      --card:#111827;         /* gray-900 */
+      --text:#e5e7eb;         /* gray-200 */
+      --muted:#94a3b8;        /* slate-400 */
+      --accent:#38bdf8;       /* sky-400 */
+      --accent-2:#34d399;     /* emerald-400 */
+      --ring:#22d3ee55;       /* cyan ring */
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background: radial-gradient(1200px 600px at 20% -10%, #1f2937 0%, #0b1222 40%, var(--bg) 70%);
+      color:var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Arial, sans-serif;
+    }
+    .wrap{max-width:1080px; margin:0 auto; padding:24px 16px 80px}
+    header{display:flex; gap:16px; align-items:center; justify-content:space-between; margin-bottom:16px}
+    .title{font-weight:800; letter-spacing:.02em;}
+    .title .jp{font-size:28px}
+    .title .en{font-size:12px; color:var(--muted); letter-spacing:.2em}
+
+    .toolbar{display:grid; grid-template-columns: 1fr auto auto; gap:12px; background:var(--panel); padding:12px; border-radius:14px; box-shadow: 0 10px 30px #0008}
+    .search{position:relative}
+    .search input{
+      width:100%; padding:12px 14px 12px 40px; border-radius:10px; border:1px solid #334155; background:#0b1222; color:var(--text);
+      outline:none; box-shadow:none; transition:.2s border-color,.2s box-shadow
+    }
+    .search input:focus{border-color:var(--accent); box-shadow:0 0 0 4px var(--ring)}
+    .search svg{position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:.6}
+
+    select, button{
+      padding:12px 14px; border-radius:10px; border:1px solid #334155; background:#0b1222; color:var(--text); cursor:pointer
+    }
+    button.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2)); border:none; font-weight:700}
+
+    .grid{display:grid; grid-template-columns: repeat(auto-fill,minmax(220px, 1fr)); gap:14px; margin-top:16px}
+
+    .card{
+      background:linear-gradient(180deg, #0f172a, #0b1222 60%);
+      border:1px solid #233146; border-radius:16px; overflow:hidden; position:relative; transition: transform .15s ease, box-shadow .15s ease, border-color .2s;
+      box-shadow:0 6px 18px #0009
+    }
+    .card:hover{transform:translateY(-2px); box-shadow:0 14px 28px #000a; border-color:#2e3d56}
+
+    .thumb{aspect-ratio: 16/10; display:grid; place-items:center; background:#0b1222; font-size:12px; color:var(--muted)}
+    .thumb img{width:100%; height:100%; object-fit:cover; display:block}
+
+    .body{padding:12px 12px 14px}
+    .name{font-weight:800; margin:2px 0 6px}
+    .meta{font-size:12px; color:var(--muted); display:flex; gap:6px; flex-wrap:wrap}
+    .tag{border:1px solid #334155; padding:2px 8px; border-radius:999px}
+
+    .desc{font-size:13px; color:#cbd5e1; margin-top:8px; line-height:1.55; height:3.3em; overflow:hidden}
+
+    .count{margin:14px 2px 0; font-size:13px; color:var(--muted)}
+
+    dialog{border:none; border-radius:20px; padding:0; width:min(720px, 92vw); background:#0b1222; color:var(--text)}
+    .modal-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #22314a; background:#0f172a}
+    .modal-body{padding:16px}
+    .modal-body img{width:100%; border-radius:14px; border:1px solid #22314a}
+    .modal-grid{display:grid; grid-template-columns:2fr 3fr; gap:16px; margin-top:12px}
+    .kv{display:grid; gap:8px; font-size:14px}
+    .kv div{display:grid; grid-template-columns:92px 1fr; gap:8px}
+
+    .footer{position:fixed; inset:auto 0 0; background:linear-gradient(180deg,#0000,#0006 30%, #000d 60%); padding:12px 16px}
+    .footer .inner{max-width:1080px; margin:0 auto; display:flex; gap:8px; align-items:center; justify-content:space-between}
+    .hint{font-size:12px; color:var(--muted)}
+
+    @media (max-width:720px){
+      .toolbar{grid-template-columns: 1fr 1fr; grid-auto-rows: auto}
+      .toolbar .search{grid-column:1/3}
+      .modal-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <div class="jp">ミニ図鑑</div>
+        <div class="en">Simple Encyclopedia</div>
+      </div>
+      <button id="exportBtn" class="primary" title="データ(JSON)を書き出し">データを書き出し</button>
+    </header>
+
+    <section class="toolbar" role="region" aria-label="検索と絞り込み">
+      <div class="search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/></svg>
+        <input id="q" type="search" placeholder="名前・タグ・説明で検索" autocomplete="off" />
+      </div>
+      <select id="category">
+        <option value="">すべてのカテゴリ</option>
+      </select>
+      <select id="sort">
+        <option value="name">名前順</option>
+        <option value="new">新しい順</option>
+      </select>
+    </section>
+
+    <div class="count" id="count"></div>
+    <section class="grid" id="grid" aria-live="polite"></section>
+  </div>
+
+  <dialog id="modal">
+    <div class="modal-head">
+      <strong id="mName">名称</strong>
+      <button id="closeModal">閉じる</button>
+    </div>
+    <div class="modal-body">
+      <img id="mImg" alt="プレビュー" />
+      <div class="modal-grid">
+        <div class="kv" id="mKv"></div>
+        <div>
+          <h3 style="margin:0 0 8px">説明</h3>
+          <p id="mDesc" style="line-height:1.7"></p>
+          <div id="mTags" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="footer">
+    <div class="inner">
+      <div class="hint">💡 データは <code>data</code> 配列を編集して増やせます。画像は <code>images/ファイル名</code> を置くか、URLを指定してください。</div>
+      <button id="addSample" title="サンプルを1件追加">サンプル追加</button>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * \u25C6 使い方
+     * 1) 下の data 配列を編集して項目を増やす
+     * 2) images フォルダを作り、 imageUrl に書いたファイルを置く (または https://... のURLを入れる)
+     * 3) GitHub Pages にデプロイ (index.html だけでも動きます)
+     */
+
+    /** @typedef {{ id:string, name:string, category:string, description:string, tags:string[], imageUrl?:string, createdAt?:string, size?:string, habitat?:string, note?:string }} Entry */
+
+    /** @type {Entry[]} */
+    const data = [
+      {
+        id: "1",
+        name: "アオガエル",
+        category: "両生類",
+        description: "樹上で生活する小型のカエル。吸盤のある指で器用に枝を渡る。",
+        tags: ["みどり","木登り","小型"],
+        imageUrl: "images/tree-frog.jpg",
+        size: "3〜5cm",
+        habitat: "森林・庭木",
+        createdAt: "2025-10-01"
+      },
+      {
+        id: "2",
+        name: "ヤマネコ",
+        category: "哺乳類",
+        description: "夜行性。鋭い爪と耳を持ち、小動物を巧みに狩る。",
+        tags: ["ねこ","夜行性"],
+        imageUrl: "images/wildcat.jpg",
+        size: "50〜60cm",
+        habitat: "山地・森林",
+        createdAt: "2025-10-05"
+      },
+      {
+        id: "3",
+        name: "クロツグミ",
+        category: "鳥類",
+        description: "澄んださえずりで知られるツグミの仲間。春に美しく鳴く。",
+        tags: ["さえずり","渡り"],
+        imageUrl: "images/black-thrush.jpg",
+        size: "20〜24cm",
+        habitat: "落葉広葉樹林",
+        createdAt: "2025-09-20"
+      },
+      {
+        id: "4",
+        name: "ヒメトカゲ",
+        category: "はちゅう類",
+        description: "細長い体と素早い動き。日光浴が大好き。",
+        tags: ["とかげ","砂地"],
+        imageUrl: "images/lizard.jpg",
+        size: "10〜14cm",
+        habitat: "草地・砂地",
+        createdAt: "2025-10-10"
+      }
+    ];
+
+    // ——— ローカルストレージに保存されていたら読み込む（編集を保持）
+    const saved = localStorage.getItem("mini-encyclopedia");
+    if(saved){
+      try{ const parsed = JSON.parse(saved); if(Array.isArray(parsed)) mergeUserEdits(parsed); }catch(e){}
+    }
+    function mergeUserEdits(arr){
+      // id が一致するものを置き換え、未知 id は追加
+      const map = new Map(data.map(x=>[x.id,x]));
+      for(const x of arr){ map.set(x.id, {...map.get(x.id), ...x}); }
+      entries = Array.from(map.values());
+    }
+
+    /** @type {Entry[]} */
+    let entries = data.slice();
+
+    // ——— UI 要素
+    const grid = document.getElementById('grid');
+    const q = document.getElementById('q');
+    const category = document.getElementById('category');
+    const sortSel = document.getElementById('sort');
+    const countEl = document.getElementById('count');
+    const modal = document.getElementById('modal');
+    const mName = document.getElementById('mName');
+    const mDesc = document.getElementById('mDesc');
+    const mImg = document.getElementById('mImg');
+    const mKv = document.getElementById('mKv');
+    const mTags = document.getElementById('mTags');
+
+    // ——— カテゴリ初期化
+    function initCategories(){
+      const set = new Set(entries.map(e=>e.category));
+      const opts = ["", ...Array.from(set)];
+      category.innerHTML = opts.map(v=>`<option value="${escapeHtml(v)}">${v||'すべてのカテゴリ'}</option>`).join('');
+    }
+
+    // ——— レンダリング
+    function render(){
+      const kw = q.value.trim().toLowerCase();
+      const cat = category.value;
+      let list = entries.filter(e=>{
+        const hitKw = !kw || [e.name, e.description, ...(e.tags||[])].join(' ').toLowerCase().includes(kw);
+        const hitCat = !cat || e.category === cat;
+        return hitKw && hitCat;
+      });
+      if(sortSel.value === 'name') list.sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+      else if(sortSel.value === 'new') list.sort((a,b)=> (b.createdAt||'').localeCompare(a.createdAt||''));
+
+      countEl.textContent = `${list.length} 件`;
+      grid.innerHTML = list.map(entryToCard).join('');
+
+      // 画像遅延読み込み & クリックハンドラ
+      grid.querySelectorAll('.card').forEach(card=>{
+        card.addEventListener('click', ()=> openDetail(card.dataset.id));
+        const img = card.querySelector('img[data-src]');
+        if(img){ img.src = img.dataset.src; img.removeAttribute('data-src'); }
+      });
+
+      // 保存
+      localStorage.setItem('mini-encyclopedia', JSON.stringify(entries));
+    }
+
+    function entryToCard(e){
+      const fallback = svgPlaceholder(e.name);
+      const img = e.imageUrl ? `<img alt="${escapeHtml(e.name)}" data-src="${escapeAttr(e.imageUrl)}">` : fallback;
+      const tags = (e.tags||[]).slice(0,3).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
+      return `
+        <article class="card" tabindex="0" role="button" aria-label="${escapeAttr(e.name)} の詳細を開く" data-id="${escapeAttr(e.id)}">
+          <div class="thumb">${img}</div>
+          <div class="body">
+            <div class="name">${escapeHtml(e.name)}</div>
+            <div class="meta">
+              <span class="tag">${escapeHtml(e.category)}</span>
+              ${tags}
+            </div>
+            <div class="desc">${escapeHtml(e.description)}</div>
+          </div>
+        </article>`;
+    }
+
+    function openDetail(id){
+      const e = entries.find(x=>x.id===id);
+      if(!e) return;
+      mName.textContent = e.name;
+      mDesc.textContent = e.description;
+      mImg.src = e.imageUrl || dataUrlFromText(e.name);
+      mImg.alt = e.name + ' の画像';
+      mKv.innerHTML = '';
+      const kvs = [
+        ['カテゴリ', e.category],
+        ['サイズ', e.size||'-'],
+        ['生息域', e.habitat||'-'],
+        ['メモ', e.note||'-']
+      ];
+      for(const [k,v] of kvs){
+        const div = document.createElement('div');
+        div.innerHTML = `<span style="color:var(--muted)">${escapeHtml(k)}</span><span>${escapeHtml(v)}</span>`;
+        mKv.appendChild(div);
+      }
+      mTags.innerHTML = (e.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
+      modal.showModal();
+    }
+
+    document.getElementById('closeModal').addEventListener('click', ()=>modal.close());
+
+    // ——— ユーティリティ
+    function escapeHtml(s=''){return String(s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
+    function escapeAttr(s=''){return String(s).replace(/"/g,'&quot;')}
+
+    // 名前から簡易SVGサムネイルを生成（画像がないとき用）
+    function svgPlaceholder(text){
+      const t = (text||'').slice(0,6);
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500'>
+        <defs>
+          <linearGradient id='g' x1='0' x2='1'>
+            <stop offset='0' stop-color='#1e293b'/>
+            <stop offset='1' stop-color='#0b1222'/>
+          </linearGradient>
+        </defs>
+        <rect width='800' height='500' fill='url(#g)'/>
+        <text x='50%' y='52%' text-anchor='middle' font-size='64' fill='#94a3b8' font-family='system-ui, sans-serif'>${escapeHtml(t)}</text>
+      </svg>`;
+      return `<img alt='placeholder' data-src='data:image/svg+xml;utf8,${encodeURIComponent(svg)}'>`;
+    }
+
+    function dataUrlFromText(text){
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500'>
+        <rect width='800' height='500' fill='#0b1222'/>
+        <text x='50%' y='52%' text-anchor='middle' font-size='64' fill='#94a3b8' font-family='system-ui, sans-serif'>${escapeHtml(text)}</text>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+    }
+
+    // ——— 事件: 入力・選択が変わったら再描画
+    q.addEventListener('input', render);
+    category.addEventListener('change', render);
+    sortSel.addEventListener('change', render);
+
+    // ——— エクスポート: 現在の entries を JSON ダウンロード
+    document.getElementById('exportBtn').addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(entries, null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'encyclopedia-data.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    // ——— サンプル1件追加
+    document.getElementById('addSample').addEventListener('click', ()=>{
+      const id = String(Date.now());
+      entries.unshift({
+        id,
+        name: `新しい項目 ${new Date().toLocaleDateString('ja-JP')}`,
+        category: "未分類",
+        description: "ここに説明を書きます。",
+        tags: ["サンプル"],
+        createdAt: new Date().toISOString().slice(0,10)
+      });
+      initCategories();
+      render();
+    });
+
+    // 初期化
+    initCategories();
+    render();
+  </script>
+</body>
+</html>
