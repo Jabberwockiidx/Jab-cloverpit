@@ -1,8 +1,16 @@
-<script>
-fetch("data.json")
-  .then(res => res.json())
-  .then(json => {
-    const entries = json.items;
-    // ここで entries を使って図鑑を表示
-  });
-</script>
+[
+  {
+    "id": "1",
+    "name": "アオガエル",
+    "category": "両生類",
+    "description": "樹上で生活する小型のカエル。吸盤のある指で器用に枝を渡る。",
+    "imageUrl": "images/tree-frog.jpg"
+  },
+  {
+    "id": "2",
+    "name": "ヤマネコ",
+    "category": "哺乳類",
+    "description": "夜行性の野生猫。鋭い爪で獲物を狩る。",
+    "imageUrl": "images/wildcat.jpg"
+  }
+]
