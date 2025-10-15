@@ -70,7 +70,7 @@
       grid.innerHTML = list.map(item => {
         const tags = (item.tags||[]).map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join("");
         const imgPath = item.image && item.image.trim() ? item.image : "no_image_logo.png";
-        const img = `<img src="${escapeAttr(imgPath)}" alt="${escapeAttr(item.name)}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;margin-bottom:8px;border:1px solid #1c2444;" onerror="this.src='no_image_logo.png';" />`;
+        const img = `<img src="${escapeAttr(imgPath)}" alt="${escapeAttr(item.name)}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;margin-bottom:8px;border:1px solid #1c2444;" onerror="this.src='./images/no_image_logo.png';" />`;
 
         return `
           <article class="card" tabindex="0">
@@ -177,4 +177,5 @@
   </script>
 </body>
 </html>
+
 
