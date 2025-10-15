@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>図鑑データエディタ</title>
+  <style>
+    :root{--bg:#0f172a;--panel:#111827;--line:#22314a;--text:#e5e7eb;--muted:#94a3b8;--accent:#38bdf8;--accent2:#34d399}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic UI",sans-serif}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#0b1222}
+    header h1{font-size:18px;margin:0}
+    .wrap{display:grid;grid-template-columns: 1.2fr 1fr;gap:14px;max-width:1200px;margin:0 auto;padding:16px}
+    @media (max-width:900px){.wrap{grid-template-columns:1fr}}
+
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+    .panel h2{font-size:14px;margin:0;padding:10px 12px;border-bottom:1px solid var(--line);background:#0f172a}
+    .panel .body{padding:12px}
+
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    .toolbar input[type="search"]{flex:1;min-width:180px}
+
+    input,textarea,select,button{background:#0b1222;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 12px;outline:none}
+    textarea{min-height:96px}
+    button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;font-weight:700;cursor:pointer}
+    button.danger{background:#7f1d1d;border-color:#7f1d1d}
+    .grid{display:grid;gap:8px}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;font-size:14px}
+    th{color:var(--muted);font-weight:600}
+    tr:hover{background:#0b122255}
+    .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#cbd5e1}
+    .tags{font-size:12px;color:#cbd5e1}
+    .right{display:flex;gap:8px;justify-content:flex-end}
+    .hint{font-size:12px;color:var(--muted)}
+
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .form-grid label{display:grid;gap:6px;font-size:12px;color:var(--muted)}
+    .form-grid label.full{grid-column:1/-1}
+
+    .footer{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:10px}
+    a.link{color:var(--accent)}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>図鑑データエディタ <span class="hint" id="status"></span></h1>
+    <div class="right">
+      <button id="btnImport">JSON読み込み</button>
+      <button id="btnDownload" class="primary">data.jsonを書き出し</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- 左: 一覧 -->
+    <section class="panel">
+      <h2>一覧</h2>
+      <div class="body grid">
+        <div class="toolbar">
+          <input id="q" type="search" placeholder="検索（名前・説明・タグ・カテゴリ）" />
+          <select id="sort">
+            <option value="new">新しい順</option>
+            <option value="name">名前順</option>
+          </select>
+          <button id="btnNew" class="primary">新規作成</button>
+        </div>
+        <div class="hint">💡 右上の「data.jsonを書き出し」でダウンロードし、GitHubへアップロードすると公開ページに反映されます。</div>
+        <div style="overflow:auto">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th style="width:10ch">ID</th>
+                <th>名前</th>
+                <th>カテゴリ</th>
+                <th>タグ</th>
+                <th>更新日</th>
+                <th style="width:170px">操作</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右: 編集フォーム -->
+    <section class="panel">
+      <h2 id="formTitle">新規作成</h2>
+      <div class="body">
+        <form id="form" class="grid form-grid" autocomplete="off">
+          <label>
+            <span>ID（自動生成推奨）</span>
+            <input id="f_id" placeholder="空なら自動採番" />
+          </label>
+          <label>
+            <span>名前 *</span>
+            <input id="f_name" required />
+          </label>
+          <label>
+            <span>カテゴリ</span>
+            <input id="f_category" />
+          </label>
+          <label>
+            <span>タグ（カンマ区切り）</span>
+            <input id="f_tags" placeholder="例: みどり, 小型" />
+          </label>
+          <label class="full">
+            <span>説明 *</span>
+            <textarea id="f_description" required></textarea>
+          </label>
+          <label class="full">
+            <span>画像URL（例: images/frog.jpg または https://…）</span>
+            <input id="f_imageUrl" />
+          </label>
+          <label>
+            <span>サイズ</span>
+            <input id="f_size" />
+          </label>
+          <label>
+            <span>生息域</span>
+            <input id="f_habitat" />
+          </label>
+          <label class="full">
+            <span>メモ</span>
+            <input id="f_note" />
+          </label>
+          <label>
+            <span>作成日（YYYY-MM-DD）</span>
+            <input id="f_createdAt" placeholder="空なら今日" />
+          </label>
+          <div class="footer">
+            <div class="hint">必須: 名前・説明</div>
+            <div class="right">
+              <button type="button" id="btnReset">リセット</button>
+              <button type="submit" class="primary">保存</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <input type="file" id="fileInput" accept="application/json" hidden />
+
+  <script>
+    // ===== 状態 =====
+    /** @type {Array<any>} */
+    let entries = [];
+    let editingId = null; // 現在編集中のID（null = 新規）
+
+    // ===== 初期化 =====
+    window.addEventListener('DOMContentLoaded', init);
+
+    async function init(){
+      setStatus('読み込み中…');
+      const restored = localStorage.getItem('zukan-editor');
+      try{
+        const res = await fetch('./data.json', { cache: 'no-store' });
+        if(res.ok){ entries = await res.json(); setStatus('data.json を読み込みました'); }
+        else{ entries = []; setStatus(`data.json 読み込み失敗: HTTP ${res.status}`); }
+      }catch(e){
+        entries = restored ? JSON.parse(restored) : [];
+        setStatus('オフラインまたはdata.json未配置。ローカルの下書きを利用します');
+      }
+      if(!Array.isArray(entries)) entries = [];
+      renderTable();
+      bindUI();
+    }
+
+    function setStatus(msg){ document.getElementById('status').textContent = '— ' + msg; }
+
+    // ===== テーブル描画 =====
+    function renderTable(){
+      const q = document.getElementById('q').value?.trim().toLowerCase() || '';
+      const sort = document.getElementById('sort').value || 'new';
+      let list = entries.slice();
+      if(q){
+        list = list.filter(e => [e.name,e.description,e.category,(e.tags||[]).join(',')].join(' ').toLowerCase().includes(q));
+      }
+      if(sort==='name') list.sort((a,b)=> (a.name||'').localeCompare(b.name||'', 'ja'));
+      if(sort==='new') list.sort((a,b)=> String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+
+      const tbody = document.querySelector('#tbl tbody');
+      tbody.innerHTML = list.map(e => {
+        const tags = (e.tags||[]).join(', ');
+        return `<tr>
+          <td class="mono">${escapeHtml(e.id||'')}</td>
+          <td>${escapeHtml(e.name||'')}</td>
+          <td>${escapeHtml(e.category||'')}</td>
+          <td class="tags">${escapeHtml(tags)}</td>
+          <td class="mono">${escapeHtml(e.createdAt||'')}</td>
+          <td>
+            <div class="right">
+              <button data-act="edit" data-id="${escapeAttr(e.id)}">編集</button>
+              <button data-act="dup" data-id="${escapeAttr(e.id)}">複製</button>
+              <button class="danger" data-act="del" data-id="${escapeAttr(e.id)}">削除</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+
+      tbody.querySelectorAll('button').forEach(btn=>{
+        btn.addEventListener('click', onRowAction);
+      });
+
+      localStorage.setItem('zukan-editor', JSON.stringify(entries));
+    }
+
+    function onRowAction(e){
+      const act = e.currentTarget.dataset.act;
+      const id = e.currentTarget.dataset.id;
+      const item = entries.find(x => String(x.id) === String(id));
+      if(!item) return;
+      if(act==='edit') fillForm(item);
+      if(act==='dup'){
+        const copy = structuredClone(item);
+        copy.id = genId();
+        copy.name = item.name + '（複製）';
+        entries.unshift(copy);
+        renderTable();
+        fillForm(copy);
+      }
+      if(act==='del'){
+        if(confirm('削除しますか？')){
+          entries = entries.filter(x => String(x.id) !== String(id));
+          renderTable();
+          if(editingId===id){ resetForm(); }
+        }
+      }
+    }
+
+    // ===== フォーム =====
+    function fillForm(e){
+      editingId = e.id;
+      document.getElementById('formTitle').textContent = '編集: ' + (e.name||'')
+      f_id.value = e.id || '';
+      f_name.value = e.name || '';
+      f_category.value = e.category || '';
+      f_tags.value = (e.tags||[]).join(', ');
+      f_description.value = e.description || '';
+      f_imageUrl.value = e.imageUrl || '';
+      f_size.value = e.size || '';
+      f_habitat.value = e.habitat || '';
+      f_note.value = e.note || '';
+      f_createdAt.value = e.createdAt || '';
+    }
+
+    function resetForm(){
+      editingId = null;
+      document.getElementById('formTitle').textContent = '新規作成';
+      document.getElementById('form').reset();
+    }
+
+    function bindUI(){
+      document.getElementById('q').addEventListener('input', renderTable);
+      document.getElementById('sort').addEventListener('change', renderTable);
+      document.getElementById('btnNew').addEventListener('click', resetForm);
+      document.getElementById('btnReset').addEventListener('click', resetForm);
+
+      document.getElementById('form').addEventListener('submit', ev =>{
+        ev.preventDefault();
+        const entry = collectForm();
+        if(!entry.name || !entry.description){ alert('名前と説明は必須です'); return; }
+        if(editingId){
+          const idx = entries.findIndex(x => String(x.id) === String(editingId));
+          if(idx>=0) entries[idx] = entry;
+        }else{
+          entries.unshift(entry);
+        }
+        renderTable();
+        resetForm();
+      });
+
+      document.getElementById('btnDownload').addEventListener('click', downloadJson);
+      document.getElementById('btnImport').addEventListener('click', ()=> document.getElementById('fileInput').click());
+      document.getElementById('fileInput').addEventListener('change', importJsonFromFile);
+    }
+
+    function collectForm(){
+      const id = (f_id.value || genId()).trim();
+      const entry = {
+        id,
+        name: f_name.value.trim(),
+        category: f_category.value.trim(),
+        description: f_description.value.trim(),
+        tags: f_tags.value.split(',').map(s=>s.trim()).filter(Boolean),
+        imageUrl: f_imageUrl.value.trim() || undefined,
+        size: f_size.value.trim() || undefined,
+        habitat: f_habitat.value.trim() || undefined,
+        note: f_note.value.trim() || undefined,
+        createdAt: (f_createdAt.value.trim() || new Date().toISOString().slice(0,10))
+      };
+      return entry;
+    }
+
+    function genId(){
+      // 時刻 + 乱数の簡易ID
+      return String(Date.now()) + '-' + Math.random().toString(36).slice(2,6);
+    }
+
+    function downloadJson(){
+      const blob = new Blob([JSON.stringify(entries, null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'data.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function importJsonFromFile(ev){
+      const file = ev.target.files?.[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          const json = JSON.parse(String(reader.result||'[]'));
+          if(!Array.isArray(json)) throw new Error('配列ではありません');
+          entries = json;
+          renderTable();
+          resetForm();
+          setStatus('ローカルからJSONを読み込みました');
+        }catch(e){ alert('JSONの読み込みに失敗: '+e.message); }
+      };
+      reader.readAsText(file);
+      // 入力をクリア
+      ev.target.value = '';
+    }
+
+    // ===== ユーティリティ =====
+    function escapeHtml(s=''){return String(s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]))}
+    function escapeAttr(s=''){return String(s).replace(/"/g,'&quot;')}
+  </script>
+</body>
+</html>
