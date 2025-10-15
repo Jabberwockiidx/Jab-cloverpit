@@ -22,7 +22,7 @@
     "description": "世界最大級の両生類。清流に生息し、天然記念物に指定。",
     "tags": ["両生類","大型","保護種","淡水"],
     "image": "images/oh-salamander.jpg"
-  }
+  },
   {
     "id": 4,
     "name": "sangan",
@@ -32,5 +32,6 @@
     "image": "images/tree-frog.png"
   }
 ]
+
 
 
