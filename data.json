@@ -1,9 +1,12 @@
-[
-    {
-    "id": "1",
-    "name": "Placeholder",
-    "category": "Placeholder",
-    "description": "この文章はプレースホルダーです。",
-    "imageUrl": "images/Placeholder.png"
-  }
-]
+{
+  id: "1",
+  name: "Placeholder",
+  category: "カテゴリ（例：哺乳類）",
+  description: "この文章はプレースホルダーです。",
+  tags: ["タグ1","タグ2"],
+  imageUrl: "images/Placeholder.png",   // 省略可（URLでもOK）
+  size: "大きさなど",            // 省略可
+  habitat: "生息域など",          // 省略可
+  note: "メモ",
+  createdAt: "YYYY-MM-DD"        // 並び替え「新しい順」に使われます
+}
