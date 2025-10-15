@@ -1,26 +1,26 @@
 [
   {
-    "id": "1",
-    "name": "Placeholder",
-    "category": "カテゴリ（例：哺乳類）",
-    "description": "この文章はプレースホルダーです。",
-    "tags": ["タグ1", "タグ2"],
-    "imageUrl": "images/Placeholder.png",
-    "size": "大きさなど",
-    "habitat": "生息域など",
-    "note": "メモ",
-    "createdAt": "2025-10-15"
+    "id": 1,
+    "name": "アカギツネ",
+    "category": "哺乳類",
+    "description": "北半球に広く生息する中型のキツネ。夜行性で警戒心が強い。",
+    "tags": ["哺乳類","夜行性","中型","野生"],
+    "image": "images/akagitsune.jpg"
   },
   {
-    "id": "2",
-    "name": "Placeholder2",
-    "category": "カテゴリ（例：哺乳類）",
-    "description": "この文章はプレースホルダー2です。",
-    "tags": ["タグ1", "タグ2"],
-    "imageUrl": "images/tree-frog.png",
-    "size": "大きさなど",
-    "habitat": "生息域など",
-    "note": "メモ",
-    "createdAt": "2025-10-15"
+    "id": 2,
+    "name": "シジュウカラ",
+    "category": "鳥類",
+    "description": "日本でも身近なカラ類。木の幹をつつきながら昆虫を食べる。",
+    "tags": ["鳥類","小型","身近","森林"],
+    "image": "images/shijukara.jpg"
+  },
+  {
+    "id": 3,
+    "name": "オオサンショウウオ",
+    "category": "両生類",
+    "description": "世界最大級の両生類。清流に生息し、天然記念物に指定。",
+    "tags": ["両生類","大型","保護種","淡水"],
+    "image": "images/oh-salamander.jpg"
   }
 ]
