@@ -285,7 +285,7 @@
     }
 
     function collectForm(){
-      const id = (f_id.value || genId()).trim();
+      const id = (f_id.value ? String(f_id.value).trim() : genId());
       const entry = {
         id,
         name: f_name.value.trim(),
@@ -302,11 +302,22 @@
     }
 
     function genId(){
-      // 時刻 + 乱数の簡易ID
-      return String(Date.now()) + '-' + Math.random().toString(36).slice(2,6);
+      // 既存の数値IDの最大値 + 1 を返す（数値でないIDは無視）
+      return nextNumericId(entries);
+    }
+    function nextNumericId(list){
+      const nums = list
+        .map(e => Number(String(e?.id ?? '').trim()))
+        .filter(n => Number.isFinite(n));
+      const max = nums.length ? Math.max(...nums) : 0;
+      let candidate = max + 1;
+      // 念のため、文字列としての重複を回避
+      const ids = new Set(list.map(e => String(e?.id ?? '')));
+      while(ids.has(String(candidate))){ candidate++; }
+      return String(candidate);
     }
 
-    function downloadJson(){
+    function downloadJson(){(){
       const blob = new Blob([JSON.stringify(entries, null, 2)], {type:'application/json'});
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
