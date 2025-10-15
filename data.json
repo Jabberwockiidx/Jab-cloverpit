@@ -1,3 +1,4 @@
+[
 {
   id: "1",
   name: "Placeholder",
@@ -10,3 +11,4 @@
   note: "メモ",
   createdAt: "YYYY-MM-DD"        // 並び替え「新しい順」に使われます
 }
+]
