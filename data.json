@@ -1,13 +1,14 @@
 [
   {
-  id: "1",
-  name: "Placeholder",
-  category: "カテゴリ（例：哺乳類）",
-  description: "この文章はプレースホルダーです。",
-  tags: ["タグ1","タグ2"],
-  imageUrl: "images/Placeholder.png",
-  size: "大きさなど",
-  habitat: "生息域など",
-  note: "メモ",
-  createdAt: "YYYY-MM-DD"  }
+    "id": "1",
+    "name": "Placeholder",
+    "category": "カテゴリ（例：哺乳類）",
+    "description": "この文章はプレースホルダーです。",
+    "tags": ["タグ1", "タグ2"],
+    "imageUrl": "images/Placeholder.png",
+    "size": "大きさなど",
+    "habitat": "生息域など",
+    "note": "メモ",
+    "createdAt": "2025-10-15"
+  }
 ]
